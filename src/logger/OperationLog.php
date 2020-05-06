@@ -46,57 +46,15 @@ class OperationLog extends Base
     }
 
     /**
-     * @param $monitorConfig
-     * @return $this
-     */
-    public function setMonitorConfig($monitorConfig)
-    {
-        $monitorConfig     = require($monitorConfig);
-        $this->monitorApis = $monitorConfig['api'] ?? [];
-        $this->recordLog->setMonitorTables($monitorConfig['tables'] ?? []);
-        return $this;
-    }
-
-    /**
-     * @param $request
-     * @return $this
-     */
-    public function setRequest($request)
-    {
-        $this->request = $request;
-        return $this;
-    }
-
-    /**
-     * @param $app
-     * @return $this
-     */
-    public function setApp($app)
-    {
-        $this->app = $app;
-        return $this;
-    }
-
-    /**
      * @return array
      */
-    public function parseRequest()
+    private function parseRequest()
     {
         $params = $this->request->get();
         if ($this->request->isPost || $this->request->isPut || $this->request->isDelete) {
             $params = array_merge($params, $this->request->bodyParams);
         }
         return ['method' => $this->request->method, 'params' => BaseJson::encode($params)];
-    }
-
-    /**
-     * @param $model
-     * @return $this
-     */
-    public function setRecordModel($model)
-    {
-        $this->recordLog->setModel($model);
-        return $this;
     }
 
     /**
@@ -144,6 +102,48 @@ class OperationLog extends Base
     }
 
     /**
+     * @param $app
+     * @return $this
+     */
+    public function setApp($app)
+    {
+        $this->app = $app;
+        return $this;
+    }
+
+    /**
+     * @param $request
+     * @return $this
+     */
+    public function setRequest($request)
+    {
+        $this->request = $request;
+        return $this;
+    }
+
+    /**
+     * @param $monitorConfig
+     * @return $this
+     */
+    public function setMonitorConfig($monitorConfig)
+    {
+        $monitorConfig     = require($monitorConfig);
+        $this->monitorApis = $monitorConfig['api'] ?? [];
+        $this->recordLog->setMonitorTables($monitorConfig['tables'] ?? []);
+        return $this;
+    }
+
+    /**
+     * @param $model
+     * @return $this
+     */
+    public function setRecordModel($model)
+    {
+        $this->recordLog->setModel($model);
+        return $this;
+    }
+
+    /**
      * 开启日志
      *
      * @param $event
@@ -164,7 +164,7 @@ class OperationLog extends Base
             'type'              => $pathInfo['type'],
             'http_request_id'   => $_SERVER['HTTP_REQUEST_ID'] ?? '--',
             'ip'                => $this->getRealIP(),
-            'exec_time'         => 0
+            'exec_time'         => $this->getMicroTime()
         ]));
 
         return $this;
@@ -188,18 +188,19 @@ class OperationLog extends Base
         $trans = Yii::$app->db->beginTransaction();
         try {
             // 1.保存operationLog
-            $this->operationLog->user_id = $this->request->getSessionUserId();
-            $this->operationLog->target_user_id = $this->request->getCurrentUserId();
-            $this->operationLog->exec_time = $this->getMicroTime() - $this->startMicroTime;
-            if (!$this->operationLog->save()) {
+            $this->model->user_id        = $this->request->getSessionUserId();
+            $this->model->target_user_id = $this->request->getCurrentUserId();
+            $this->model->exec_time      = $this->getMicroTime() - $this->model->exec_time;
+
+            if (!$this->model->save()) {
                 throw new Exception(
-                    json_encode($this->operationLog->getFirstErrors(), JSON_UNESCAPED_UNICODE)
+                    json_encode($this->model->getFirstErrors(), JSON_UNESCAPED_UNICODE)
                 );
             }
 
             // 2.保存records
-            foreach ($this->records as $record) {
-                $record->operation_log_id = $this->operationLog->id;
+            foreach ($this->recordLog->getRecords() as $record) {
+                $record->operation_log_id = $this->model->id;
                 if (!$record->save()) {
                     throw new Exception(json_encode($record->getFirstErrors(), JSON_UNESCAPED_UNICODE));
                 }
@@ -210,8 +211,6 @@ class OperationLog extends Base
             Yii::error('操作日志记录报错，错误信息：' . $e->getMessage(), __METHOD__);
         }
 
-        // 记录到report
-        $this->addReportLaunchLog();
         return $this;
     }
 

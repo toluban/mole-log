@@ -23,4 +23,5 @@ class CConst
      */
     const JSON_FALSE = 0;
     const JSON_TRUE  = 1;
+
 }

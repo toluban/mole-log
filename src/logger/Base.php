@@ -2,7 +2,6 @@
 
 namespace toluban\MoleLog\logger;
 
-
 use yii\db\ActiveRecord;
 
 /**

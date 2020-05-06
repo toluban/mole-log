@@ -15,11 +15,6 @@ use toluban\MoleLog\logger\OperationLog;
 class Logger extends Component implements BootstrapInterface
 {
     /**
-     * @var Application
-     */
-    private $app;
-
-    /**
      * @var OperationLog
      */
     private $operationLog;
@@ -57,20 +52,13 @@ class Logger extends Component implements BootstrapInterface
     {
         $this->app = $app;
         $this->operationLog
+            ->setApp($app)
+            ->setRequest($app->getRequest())
             ->setModel($this->operationModel)
             ->setRecordModel($this->recordModel)
-            ->setMonitorConfig($this->monitorLog)
-            ->setRequest($app->getRequest());
+            ->setMonitorConfig($this->monitorLog);
 
         $app->on(Application::EVENT_BEFORE_REQUEST, [$this->operationLog, 'logBegin']);
         $app->on(Application::EVENT_AFTER_REQUEST,  [$this->operationLog, 'logEnd']);
-    }
-
-    /**
-     * @return Application
-     */
-    public function getApplication()
-    {
-        return $this->app;
     }
 }
