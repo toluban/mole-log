@@ -2,7 +2,6 @@
 
 namespace toluban\MoleLog;
 
-use yii\helpers\ArrayHelper;
 use yii\web\Request;
 use yii\base\Application;
 use toluban\MoleLog\Exception\OperationException;
