@@ -1,18 +1,18 @@
 <?php
 
-namespace toluban\MoleLog\logger;
+namespace toluban\MoleLog\Handler;
 
-use toluban\MoleLog\CConst;
 use yii\base\Event;
+use toluban\MoleLog\CConst;
 use yii\helpers\ArrayHelper;
 use yii\db\BaseActiveRecord;
 
 /**
- * Class RecordLog
+ * Class RecordHandler
  * Author: guoliuyong
- * Date: 2020-05-06 19:19
+ * Date: 2020-05-11 14:20
  */
-class RecordLog extends Base
+class RecordHandler extends Handler
 {
     /**
      * @var array

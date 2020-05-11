@@ -1,15 +1,15 @@
 <?php
 
-namespace toluban\MoleLog\logger;
+namespace toluban\MoleLog\Handler;
 
 use yii\db\ActiveRecord;
 
 /**
- * Class Base
+ * Class Handler
  * Author: guoliuyong
- * Date: 2020-05-06 17:54
+ * Date: 2020-05-11 14:19
  */
-class Base
+class Handler
 {
     /**
      * @var

@@ -5,7 +5,7 @@ namespace toluban\MoleLog;
 use yii\base\Component;
 use yii\web\Application;
 use yii\base\BootstrapInterface;
-use toluban\MoleLog\logger\OperationLog;
+use toluban\MoleLog\Handler\OperationHandler;
 
 /**
  * Class Logger
@@ -15,14 +15,19 @@ use toluban\MoleLog\logger\OperationLog;
 class Logger extends Component implements BootstrapInterface
 {
     /**
-     * @var OperationLog
+     * @var operationHandler
      */
-    private $operationLog;
+    private $operationHandler;
 
     /**
      * @var
      */
-    public $operationModel;
+    public $userId;
+
+    /**
+     * @var
+     */
+    public $targetUserId;
 
     /**
      * @var
@@ -32,17 +37,22 @@ class Logger extends Component implements BootstrapInterface
     /**
      * @var
      */
-    public $monitorLog = './config/monitor.php';
+    public $operationModel;
+
+    /**
+     * @var
+     */
+    public $monitorLog = './config/Monitor.php';
 
     /**
      * Logger constructor.
      * @param array $config
-     * @param OperationLog $operationLog
+     * @param OperationHandler $operationHandler
      */
-    public function __construct($config, OperationLog $operationLog)
+    public function __construct($config, OperationHandler $operationHandler)
     {
         parent::__construct($config);
-        $this->operationLog = $operationLog;
+        $this->operationHandler = $operationHandler;
     }
 
     /**
@@ -50,15 +60,14 @@ class Logger extends Component implements BootstrapInterface
      */
     public function bootstrap($app)
     {
-        $this->app = $app;
-        $this->operationLog
+        $this->operationHandler
             ->setApp($app)
             ->setRequest($app->getRequest())
             ->setModel($this->operationModel)
             ->setRecordModel($this->recordModel)
             ->setMonitorConfig($this->monitorLog);
 
-        $app->on(Application::EVENT_BEFORE_REQUEST, [$this->operationLog, 'logBegin']);
-        $app->on(Application::EVENT_AFTER_REQUEST,  [$this->operationLog, 'logEnd']);
+        $app->on(Application::EVENT_BEFORE_REQUEST, [$this->operationHandler, 'logBegin']);
+        $app->on(Application::EVENT_AFTER_REQUEST,  [$this->operationHandler, 'logEnd']);
     }
 }

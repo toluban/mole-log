@@ -1,6 +1,6 @@
 <?php
 
-namespace toluban\MoleLog\logger;
+namespace toluban\MoleLog\Handler;
 
 use Yii;
 use yii\helpers\BaseJson;
@@ -10,16 +10,16 @@ use yii\db\Exception;
 use yii\helpers\ArrayHelper;
 
 /**
- * Class OperationLog
+ * Class OperationHandler
  * Author: guoliuyong
- * Date: 2020-05-06 19:27
+ * Date: 2020-05-11 14:20
  */
-class OperationLog extends Base
+class OperationHandler extends Handler
 {
     /**
-     * @var RecordLog
+     * @var RecordHandler
      */
-    private $recordLog;
+    private $recordHandler;
 
     /**
      * @var array
@@ -37,12 +37,12 @@ class OperationLog extends Base
     private $app;
 
     /**
-     * OperationLog constructor.
-     * @param RecordLog $recordLog
+     * OperationHandler constructor.
+     * @param RecordHandler $recordHandler
      */
-    public function __construct(RecordLog $recordLog)
+    public function __construct(RecordHandler $recordHandler)
     {
-        $this->recordLog = $recordLog;
+        $this->recordHandler = $recordHandler;
     }
 
     /**
@@ -129,7 +129,7 @@ class OperationLog extends Base
     {
         $monitorConfig     = require($monitorConfig);
         $this->monitorApis = $monitorConfig['api'] ?? [];
-        $this->recordLog->setMonitorTables($monitorConfig['tables'] ?? []);
+        $this->recordHandler->setMonitorTables($monitorConfig['tables'] ?? []);
         return $this;
     }
 
@@ -139,7 +139,7 @@ class OperationLog extends Base
      */
     public function setRecordModel($model)
     {
-        $this->recordLog->setModel($model);
+        $this->recordHandler->setModel($model);
         return $this;
     }
 
@@ -199,12 +199,13 @@ class OperationLog extends Base
             }
 
             // 2.保存records
-            foreach ($this->recordLog->getRecords() as $record) {
+            foreach ($this->recordHandler->getRecords() as $record) {
                 $record->operation_log_id = $this->model->id;
                 if (!$record->save()) {
                     throw new Exception(json_encode($record->getFirstErrors(), JSON_UNESCAPED_UNICODE));
                 }
             }
+
             $trans->commit();
         } catch (\Exception $e) {
             $trans->rollBack();

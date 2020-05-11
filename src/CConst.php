@@ -10,6 +10,13 @@ namespace toluban\MoleLog;
 class CConst
 {
     /**
+     * field structure 0: not json 1: json
+     * @var int
+     */
+    const JSON_FALSE = 0;
+    const JSON_TRUE  = 1;
+
+    /**
      * record type 1: insert  2: update  3: delete
      * @var int
      */
@@ -18,10 +25,8 @@ class CConst
     const TYPE_DELETE = 3;
 
     /**
-     * field structure 0: not json 1: json
-     * @var int
+     * code 异常默认code
      */
-    const JSON_FALSE = 0;
-    const JSON_TRUE  = 1;
+    const CODE_DEFAULT = '1000001';
 
 }
