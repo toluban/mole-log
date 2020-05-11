@@ -54,11 +54,6 @@ class Monitor
     private $startMicroTime;
 
     /**
-     * @var array
-     */
-    private $fields = [];
-
-    /**
      * @param Application $app
      * @return $this
      */

@@ -54,7 +54,6 @@ class OperationHandler extends Handler
             ->setModel($logger->recordModel)
             ->setMonitor($monitor)
             ->listenEvents();
-
         $this->data = [
             'app'               => $monitor->getAppId(),
             'route'             => $monitor->getCurrentApi(),

@@ -73,7 +73,6 @@ class Logger extends Component implements BootstrapInterface
         $this->monitor
             ->initParams($app)
             ->parseConfig($this->monitorLog);
-
         if ($this->monitor->isMonitorApi()) {
             $app->on(Application::EVENT_BEFORE_REQUEST, [$this->operationHandler, 'logBegin']);
             $app->on(Application::EVENT_AFTER_REQUEST,  [$this->operationHandler, 'logEnd']);
