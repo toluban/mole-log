@@ -4,6 +4,13 @@
 
 yii操作日志记录，根据yii事件记录，记录api调用的具有操作记录
 
+## 设计流程
+
+* [YII的生命周期流程图](https://www.processon.com/view/5d2ee605e4b02086110743d1)
+* [操作日志的记录流程图](https://www.processon.com/view/5d300e52e4b058ef96ab9ca1)
+* [AR的生命周期](https://www.processon.com/view/5d2ffafbe4b065dc42a92269#map)
+* [表结构说明](https://www.processon.com/view/5d3135e9e4b0d11c8908f62b#map)
+
 ## 运行环境
 - PHP 7+
 - composer
@@ -25,7 +32,7 @@ yii操作日志记录，根据yii事件记录，记录api调用的具有操作�
 
 2. 执行composer install或者composer update安装依赖
 
-3. 生成对应表结构 [地址](src/Config/Init.sql)
+3. 生成对应表结构 [查看表结构](src/Config/Init.sql)
 
 4. 添加config配置
 
