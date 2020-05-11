@@ -12,7 +12,7 @@ use yii\db\ActiveRecord;
 class Handler
 {
     /**
-     * @var
+     * @var ActiveRecord
      */
     protected $model;
 
@@ -27,9 +27,9 @@ class Handler
     }
 
     /**
-     * @return mixed
+     * @return ActiveRecord
      */
-    public function getModel()
+    public function newModel()
     {
         return new $this->model;
     }

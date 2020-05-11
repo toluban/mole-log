@@ -2,6 +2,7 @@
 
 namespace toluban\MoleLog;
 
+use Closure;
 use yii\base\Component;
 use yii\web\Application;
 use yii\base\BootstrapInterface;
@@ -14,6 +15,11 @@ use toluban\MoleLog\Handler\OperationHandler;
  */
 class Logger extends Component implements BootstrapInterface
 {
+    /**
+     * @var Monitor
+     */
+    private $monitor;
+
     /**
      * @var operationHandler
      */
@@ -44,30 +50,71 @@ class Logger extends Component implements BootstrapInterface
      */
     public $monitorLog = './config/Monitor.php';
 
+
     /**
      * Logger constructor.
-     * @param array $config
+     * @param $config
      * @param OperationHandler $operationHandler
+     * @param Monitor $monitor
      */
-    public function __construct($config, OperationHandler $operationHandler)
+    public function __construct($config, OperationHandler $operationHandler, Monitor $monitor)
     {
         parent::__construct($config);
+        $this->monitor          = $monitor;
         $this->operationHandler = $operationHandler;
     }
 
     /**
      * @param \yii\base\Application $app
+     * @throws Exception\OperationException
      */
     public function bootstrap($app)
     {
-        $this->operationHandler
-            ->setApp($app)
-            ->setRequest($app->getRequest())
-            ->setModel($this->operationModel)
-            ->setRecordModel($this->recordModel)
-            ->setMonitorConfig($this->monitorLog);
+        $this->monitor
+            ->initParams($app)
+            ->parseConfig($this->monitorLog);
 
-        $app->on(Application::EVENT_BEFORE_REQUEST, [$this->operationHandler, 'logBegin']);
-        $app->on(Application::EVENT_AFTER_REQUEST,  [$this->operationHandler, 'logEnd']);
+        if ($this->monitor->isMonitorApi()) {
+            $app->on(Application::EVENT_BEFORE_REQUEST, [$this->operationHandler, 'logBegin']);
+            $app->on(Application::EVENT_AFTER_REQUEST,  [$this->operationHandler, 'logEnd']);
+        }
+    }
+
+    /**
+     * @return Monitor
+     */
+    public function getMonitor()
+    {
+        return $this->monitor;
+    }
+
+    /**
+     * @return OperationHandler
+     */
+    public function getOperationHandler()
+    {
+        return $this->operationHandler;
+    }
+
+    /**
+     * @return string
+     */
+    public function getUserId()
+    {
+        if ($this->userId instanceof Closure && is_callable($this->userId, true)) {
+            return $this->userId();
+        }
+        return '0';
+    }
+
+    /**
+     * @return string
+     */
+    public function getTargetUserId()
+    {
+        if ($this->targetUserId instanceof Closure && is_callable($this->targetUserId, true)) {
+            return $this->targetUserId();
+        }
+        return $this->getUserId();
     }
 }

@@ -6,6 +6,7 @@ use yii\base\Event;
 use toluban\MoleLog\CConst;
 use yii\helpers\ArrayHelper;
 use yii\db\BaseActiveRecord;
+use toluban\MoleLog\Monitor;
 
 /**
  * Class RecordHandler
@@ -25,13 +26,29 @@ class RecordHandler extends Handler
     private $monitorTables = [];
 
     /**
-     * RecordLog constructor.
+     * @var Monitor
      */
-    public function __construct()
+    private $monitor;
+
+    /**
+     * 监听事件
+     */
+    public function listenEvents()
     {
         Event::on(BaseActiveRecord::class, BaseActiveRecord::EVENT_AFTER_INSERT,  [$this, 'handleAfterInsert']);
         Event::on(BaseActiveRecord::class, BaseActiveRecord::EVENT_BEFORE_UPDATE, [$this, 'handleBeforeUpdate']);
         Event::on(BaseActiveRecord::class, BaseActiveRecord::EVENT_BEFORE_DELETE, [$this, 'handleBeforeDelete']);
+        return $this;
+    }
+
+    /**
+     * @param Monitor $monitor
+     * @return $this
+     */
+    public function setMonitor(Monitor $monitor)
+    {
+        $this->monitor = $monitor;
+        return $this;
     }
 
     /**
@@ -40,16 +57,6 @@ class RecordHandler extends Handler
     private function pushRecords($record)
     {
         $this->records[] = $record;
-    }
-
-    /**
-     * @param $table
-     * @return mixed
-     * @throws \yii\base\InvalidParamException
-     */
-    private function hasMonitorTable($table)
-    {
-        return ArrayHelper::getValue($this->monitorTables, 'tables.' . $table, false);
     }
 
     /**
@@ -72,18 +79,16 @@ class RecordHandler extends Handler
      * 触发db插入事件
      *
      * @param $event
-     * @throws \yii\base\InvalidParamException
      */
     public function handleAfterInsert($event)
     {
         $model = $this->getEventModel($event);
-
         // 判断api或table是否需要监控
-        if(!$this->hasMonitorTable($model->tableName())) {
+        if(!$this->monitor->isMonitorTable($model->tableName())) {
             return ;
         }
 
-        $record = $this->getModel();
+        $record = $this->newModel();
         $data = [
             'table'          => $model->tableName(),
             'table_id'       => $model->id,
@@ -101,16 +106,14 @@ class RecordHandler extends Handler
      * 触发db删除事件
      *
      * @param $event
-     * @throws \yii\base\InvalidParamException
      */
     public function handleBeforeDelete($event)
     {
         $model = $this->getEventModel($event);
-        // 判断api或table是否需要监控
-        if(!$this->hasMonitorTable($model->tableName())) {
+        if(!$this->monitor->isMonitorTable($model->tableName())) {
             return ;
         }
-        $record = $this->getModel();
+        $record = $this->newModel();
         $data = [
             'table'             => $model->tableName(),
             'table_id'          => $model->id,
@@ -133,13 +136,10 @@ class RecordHandler extends Handler
     public function handleBeforeUpdate($event)
     {
         $model = $this->getEventModel($event);
-
-        // 判断api或table是否需要监控
-        if(!$this->hasMonitorTable($model->tableName())) {
+        if(!$this->monitor->isMonitorTable($model->tableName())) {
             return ;
         }
-
-        $record = $this->getModel();
+        $record = $this->newModel();
         $data = [
             'table'             => $model->tableName(),
             'table_id'          => $model->id,
@@ -151,9 +151,10 @@ class RecordHandler extends Handler
         if (empty($model->getDirtyAttributes())) {
             return ;
         }
+
         // 解析监控
         $skipFields = ['modified_time', 'update_at'];
-        $monitorFields = $this->parseMonitorFields(array_keys($model->fields()), $model->tableName());
+        $monitorFields = $this->monitor->parseMonitorFields(array_keys($model->fields()), $model->tableName());
         foreach ($monitorFields as $field => $monitor) {
             if (in_array($field, $skipFields)) {
                 continue;
@@ -202,61 +203,5 @@ class RecordHandler extends Handler
         $record->setAttributes($data);
         $this->pushRecords($record);
         return ;
-    }
-
-    /**
-     * 解析监控字段
-     *
-     * @param $columns
-     * @param $table
-     * @return array
-     * @throws \yii\base\InvalidParamException
-     */
-    private function parseMonitorFields($columns, $table)
-    {
-        $data = [];
-        $monitorFields = ArrayHelper::getValue($this->app->params,'monitor.log.tables.'.$table);
-        // 如果有字段为*，则说明要全部字段
-        if (in_array('*', $monitorFields)) {
-            foreach ($columns as $column) {
-                $data[$column]['type'] = self::JSON_FALSE;
-            }
-            return $data;
-        }
-        if (empty($monitorFields)) {
-            return $data;
-        }
-        foreach ($monitorFields as $monitorField) {
-            // 解析值为json, 匹配 aa.bb.cc
-            if(preg_match('/([^\.]+)\.(.+)/', $monitorField, $match)) {
-                $data[$match[1]]['keys'][] = $match[2];
-                $data[$match[1]]['type'] = self::JSON_TRUE;
-                continue;
-            }
-            $pattern = null;
-            // 匹配*开头，且*结尾
-            if(preg_match('/^\*(.+)\*$/', $monitorField, $match)) {
-                $pattern = "/.+{$match[1]}.+/";
-            }
-            // 匹配*开头
-            if(preg_match('/^\*(.+[^\*]$)/', $monitorField, $match)) {
-                $pattern = "/.+{$match[1]}$/";
-            }
-            // 匹配*结尾
-            if(preg_match('/(^[^\*].+)\*$/', $monitorField, $match)) {
-                $pattern = "/^{$match[1]}.+/";
-            }
-            if($pattern != null) {
-                foreach ($columns as $column) {
-                    if(preg_match($pattern, $column, $match)) {
-                        $data[$column]['type'] = self::JSON_FALSE;
-                    }
-                }
-                continue;
-            }
-            // 正常的
-            $data[$monitorField]['type'] = self::JSON_FALSE;
-        }
-        return $data;
     }
 }
